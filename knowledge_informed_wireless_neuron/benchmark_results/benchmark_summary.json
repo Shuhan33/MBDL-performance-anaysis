@@ -1,0 +1,28 @@
+{
+  "device": "cuda",
+  "device_name": "NVIDIA GeForce RTX 2060",
+  "torch_version": "2.14.0+cu126",
+  "torch_cuda": "12.6",
+  "epochs": 15,
+  "train_size_per_task": 4000,
+  "test_size_per_snr": 2000,
+  "batch_size": 256,
+  "snr_grid": [
+    -4.0,
+    0.0,
+    4.0,
+    8.0,
+    12.0,
+    16.0
+  ],
+  "seed": 19,
+  "total_trainable_params": 451324,
+  "per_task_runtime_seconds": {
+    "bpsk": 14.849201200006064,
+    "ofdm": 13.827432499994757,
+    "tone": 6.737563600006979,
+    "mimo": 4.141115799982799
+  },
+  "total_runtime_seconds": 39.5570488999947,
+  "generated_at": "2026-09-13 17:07:13"
+}

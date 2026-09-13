@@ -1,0 +1,14 @@
+{
+  "device": "cpu",
+  "architecture": "256-128-64-4-1",
+  "epochs": 30,
+  "train_size": 1000,
+  "test_size_per_snr": 3000,
+  "batch_size": 512,
+  "learning_rate": 0.001,
+  "seed": 7,
+  "standard_params": 41417,
+  "knowledge_params": 41417,
+  "generated_at": "2026-09-13 16:18:38",
+  "elapsed_seconds": 7.234590100008063
+}

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Knowledge-informed neuron wireless experiment</title>
+<style>
+:root { color-scheme:light; --ink:#18202a; --muted:#5d6875; --line:#d9dee5; --accent:#1f6feb; --soft:#f5f7fa; }
+body { margin:0; color:var(--ink); font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; line-height:1.55; }
+main { max-width:1000px; margin:0 auto; padding:42px 24px 72px; }
+h1 { font-size:30px; line-height:1.2; margin:0 0 10px; } h2 { margin-top:36px; font-size:21px; } h3 { margin-top:24px; font-size:17px; }
+.lede { color:var(--muted); font-size:16px; max-width:800px; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; margin:24px 0; }
+.stat { background:var(--soft); border:1px solid var(--line); padding:14px 16px; } .stat strong { display:block; font-size:22px; } .stat span { color:var(--muted); font-size:13px; }
+img { max-width:100%; border:1px solid var(--line); } table { border-collapse:collapse; width:100%; font-size:14px; } th,td { border-bottom:1px solid var(--line); text-align:right; padding:8px; } th:first-child,td:first-child { text-align:left; }
+code,pre { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; } code { background:var(--soft); padding:2px 4px; } pre { background:#111827; color:#e5e7eb; overflow:auto; padding:14px; }
+.note { border-left:3px solid var(--accent); padding:8px 14px; background:#f7fbff; } a { color:var(--accent); } small { color:var(--muted); }
+</style></head><body><main>
+<h1>Knowledge-informed neuron：无线多径 BPSK 检测对比</h1>
+<p class="lede">同一套 256–128–64–4–1 全连接网络，在相同数据、随机种子和优化器下，对比普通 ReLU 与带有匹配滤波知识的类神经元。结果由本次自动运行生成。</p>
+<div class="grid">
+<div class="stat"><strong>cpu</strong><span>运行设备</span></div>
+<div class="stat"><strong>256-128-64-4-1</strong><span>网络宽度</span></div>
+<div class="stat"><strong>30</strong><span>训练轮数</span></div>
+<div class="stat"><strong>41417</strong><span>每个模型的可训练参数</span></div>
+</div>
+<h2>结果</h2>
+<p>BER 越低越好；accuracy 是中心 BPSK 符号的判决准确率。<small>测试集的真实信道相对名义信道有 10% 随机扰动，因此先验不是完美答案。</small></p>
+<img src="training_and_ber.png" alt="训练损失与不同 SNR 下的 BER 曲线">
+<table><thead><tr><th>SNR (dB)</th><th colspan="2">Standard ReLU DNN</th><th colspan="2">Knowledge-informed DNN</th></tr>
+<tr><th></th><th>BER</th><th>Accuracy</th><th>BER</th><th>Accuracy</th></tr></thead>
+<tbody><tr><td>-4</td><td>0.3403</td><td>65.97%</td><td>0.3373</td><td>66.27%</td></tr><tr><td>0</td><td>0.2737</td><td>72.63%</td><td>0.2680</td><td>73.20%</td></tr><tr><td>4</td><td>0.2333</td><td>76.67%</td><td>0.2213</td><td>77.87%</td></tr><tr><td>8</td><td>0.1977</td><td>80.23%</td><td>0.1840</td><td>81.60%</td></tr><tr><td>12</td><td>0.1823</td><td>81.77%</td><td>0.1633</td><td>83.67%</td></tr><tr><td>16</td><td>0.1710</td><td>82.90%</td><td>0.1507</td><td>84.93%</td></tr></tbody></table>
+<p><small>完整数值：<a href="metrics_by_snr.csv">metrics_by_snr.csv</a>；训练曲线：<a href="training_history.csv">training_history.csv</a>。</small></p>
+<h2>实验到底改变了什么</h2>
+<p>每个样本是长度为 128 的复数接收序列 <code>y</code>，输入网络前拆成 128 个 I 分量和 128 个 Q 分量，所以输入维度是 256。序列由 BPSK 符号经过 5-tap 复数多径信道并加入 AWGN 得到；网络要判断中心位置的符号。</p>
+<p>普通模型的隐藏层使用 <code>ReLU(z)=max(0,z)</code>。知识模型使用固定的、无额外可训练参数的：</p>
+<pre>KReLU(z,q) = ReLU(z + 0.35*tanh(q)) + 0.08*tanh(q)</pre>
+<p>其中 <code>q</code> 是用名义信道冲激响应做的可微匹配滤波分数。它把无线通信中“已知信道结构可以先做匹配/合并”的知识注入每个隐藏神经元；权重层、宽度、损失函数和训练数据都保持不变。</p>
+<div class="note"><strong>解释边界：</strong>这个结果证明的是“在这个合成多径检测任务和这个先验注入方式下，知识偏置是否有帮助”，不是普遍证明所有 knowledge neuron 都优于 ReLU。下一步可做信道失配、未知信道、不同 tap 数、不同先验强度的消融实验。</div>
+<h2>如何运行</h2>
+<h3>直接用 Python 3.12</h3>
+<pre>python -m pip install -r requirements.txt
+python train_experiment.py --device auto --epochs 30</pre>
+<p>若已安装 CUDA 版 PyTorch，<code>--device auto</code> 会自动使用 GPU；也可以显式写 <code>--device cuda</code>：</p>
+<pre>python -c "import torch; print(torch.__version__, torch.cuda.is_available())"</pre>
+<p>快速试跑：<code>python train_experiment.py --quick</code>。所有输出写入 <code>results/</code>，不会删除原有文件。</p>
+<h3>Docker（CPU，可复现）</h3>
+<pre>docker build -t knowledge-neuron-wireless .
+docker run --rm -v "${PWD}/results:/work/results" knowledge-neuron-wireless</pre>
+<p>这个 Dockerfile 使用 Python 3.12 和 CPU 版 PyTorch。GPU Docker 需要宿主机安装 NVIDIA Container Toolkit，并在镜像中改用与你驱动匹配的 CUDA 版 PyTorch；直接在已有 CUDA Python 环境运行通常更省事。</p>
+<h3>可复现参数</h3>
+<pre>{
+  "architecture": [
+    256,
+    128,
+    64,
+    4,
+    1
+  ],
+  "nominal_channel_IQ": [
+    [
+      0.30867859721183777,
+      0.10289286822080612
+    ],
+    [
+      0.7819857597351074,
+      -0.24694286286830902
+    ],
+    [
+      1.810914397239685,
+      0.0
+    ],
+    [
+      0.864300012588501,
+      0.22636429965496063
+    ],
+    [
+      0.3704143166542053,
+      -0.08231429010629654
+    ]
+  ],
+  "target_index": 64,
+  "training_snr_db": "Uniform(0, 12)",
+  "test_snr_db": [
+    -4.0,
+    0.0,
+    4.0,
+    8.0,
+    12.0,
+    16.0
+  ],
+  "channel_jitter": 0.1,
+  "knowledge_neuron": "ReLU(z) + 0.25*tanh(q)"
+}</pre>
+<p>本项目不会运行 MATLAB；如果之后希望在有 license 的远程机器上做 MATLAB 复现，可以按同一组数据公式和 <code>metrics_by_snr.csv</code> 对照。Python 版本是完整自动实验入口。</p>
+<h2>参考</h2>
+<ul><li><a href="https://arxiv.org/abs/1702.00832">O'Shea &amp; Hoydis, An Introduction to Deep Learning for the Physical Layer</a>：将深度学习用于物理层和 expert/domain knowledge 的背景。</li>
+<li><a href="https://docs.pytorch.org/docs/stable/generated/torch.nn.ReLU.html">PyTorch ReLU documentation</a>：普通 ReLU 定义。</li>
+<li><a href="https://docs.pytorch.org/docs/stable/generated/torch.cuda.is_available.html">PyTorch CUDA availability documentation</a>：本脚本自动选择 GPU 的依据。</li></ul>
+<p><small>生成时间：2026-09-13 16:18:38；耗时：7.2 秒。</small></p>
+</main></body></html>
