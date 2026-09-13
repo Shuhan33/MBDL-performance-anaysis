@@ -8,6 +8,8 @@ The repository is intentionally organized so that future MBDL experiments can be
 
 The first subproject is [`knowledge_informed_wireless_neuron`](knowledge_informed_wireless_neuron/). It studies whether replacing ordinary nonlinearities with knowledge-informed neuron variants improves performance on wireless/DSP tasks.
 
+The second subproject is [`knowledge_neuron_robustness_benchmarks`](knowledge_neuron_robustness_benchmarks/). It asks a more practical question: can a smaller knowledge-neuron network retain the performance of a large paper-inspired NN while using fewer parameters, fewer training samples, less training time, or suffering a smaller robustness loss under distribution shift?
+
 The benchmark compares three results for every task:
 
 1. **Model-based:** a conventional signal-processing or communication-theory reference;
@@ -85,6 +87,7 @@ Future subprojects can follow the same pattern, for example:
 ```text
 mbdl_performance_analysis/
 ├── knowledge_informed_wireless_neuron/
+├── knowledge_neuron_robustness_benchmarks/
 ├── learned_receiver_comparison/
 ├── physics_informed_ofdm/
 └── mimo_channel_mismatch_study/
